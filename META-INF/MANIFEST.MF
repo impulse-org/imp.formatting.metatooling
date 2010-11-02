@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Formatting Meta-tooling
+Bundle-SymbolicName: org.eclipse.imp.formatting.metatooling
+Bundle-Version: 0.2.0.qualifier
+Bundle-Activator: org.eclipse.imp.formatting.metatooling.Activator
+Bundle-Vendor: rfuhrer@watson.ibm.com
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-ActivationPolicy: lazy
