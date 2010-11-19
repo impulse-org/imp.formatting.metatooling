@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<formatter>
+<language>$LANGUAGE_NAME$</language>
+<rules>
+<rule>
+<box>H [ "$expr0" "!=" "$term0" ]
+</box>
+<preview>$expr0 != $term0
+</preview>
+</rule>
+<rule>
+<box>H [ "$expr0" "==" "$term0" ]
+</box>
+<preview>$expr0 == $term0
+</preview>
+</rule>
+<rule>
+<box>G [ "$expr0" H [ "*" "$term0" ] ]
+</box>
+<preview>$expr0 * $term0
+</preview>
+</rule>
+<rule>
+<box>G [ "$expr0" H [ "/" "$term0" ] ]
+</box>
+<preview>$expr0 / $term0
+</preview>
+</rule>
+<rule>
+<box>G [ "$expr0" H [ "&gt;" "$term0" ] ]
+</box>
+<preview>$expr0 &gt; $term0
+</preview>
+</rule>
+<rule>
+<box> G [ "$expr0" H [  "&lt;" "$term0" ]  ]
+</box>
+<preview>$expr0 &lt; $term0
+</preview>
+</rule>
+<rule>
+<box> G [ "$expr0" H [ "-" "$term0" ] ]
+</box>
+<preview>$expr0 - $term0
+</preview>
+</rule>
+<rule>
+<box> G [ "$expr0"  H [ "+" "$term0" ] ]
+</box>
+<preview>$expr0 + $term0
+</preview>
+</rule>
+<rule>
+<box> H [ "$id0" "=" H hs=0 [HV [ "$expr0" ] ";" ]]
+</box>
+<preview>$id0 = $expr0;
+</preview>
+</rule>
+<rule>
+<box> H hs=0 [ "$id0""("HOV [
+                  G gs=2 op=H hs=0 [ "$exprs0" ]
+                  ]")" ]
+</box>
+<preview>$id0($exprs0)
+</preview>
+</rule>
+<rule>
+<box> H hs=0 [ "$id0""("HOV [
+                  G gs=2 op=H hs=0 [ "$exprs0" ]
+                  ]")"";" ]
+</box>
+<preview>$id0($exprs0);
+</preview>
+</rule>
+<rule>
+<box> HV [ "int" H hs=0 [ "$id0"";" ] ]
+</box>
+<preview>int $id0;
+</preview>
+</rule>
+<rule>
+<box> V [
+H [ "if" H hs=0 [ "(""$expr0"")" ] "{" ]
+I [
+  V [
+  "$stats0"
+  ]
+]
+"}"
+]
+</box>
+<preview>if ($expr0) {
+  $stats0
+}
+</preview>
+</rule>
+<rule>
+<box> V [
+H [ "if" H hs=0 [ "(""$expr0"")" ] "{" ]
+I [
+  V [
+  "$stats0"
+  ]
+]
+"}"
+H [ "else" "{" ]
+I [
+  V [
+  "$stats1"
+  ]
+]
+"}"
+]
+</box>
+<preview>if ($expr0) {
+  $stats0
+}
+else {
+  $stats1
+}
+</preview>
+</rule>
+<rule>
+<box> V [
+H [ "if" H hs=0 [ "(""$expr0"")" ] "{" ]
+I [
+  "$stats0"
+]
+"}"
+H [ "else" "if" "(" "$expr1" ")" "{" ]
+I [
+  "$stats1"
+]
+"}"
+H [ "else" "{" ]
+I [
+  "$stats2"
+]
+"}"
+]
+</box>
+<preview>if ($expr0) {
+  $stats0
+}
+else if ( $expr1 ) {
+  $stats1
+}
+else {
+  $stats2
+}
+</preview>
+</rule>
+<rule>
+<box> V [
+H [ "while" H hs=0 [ "(" HV ["$expr0" ] ")" ] "{" ]
+I [
+  V [
+  "$stats0"
+  ]
+]
+"}"
+]
+</box>
+<preview>while ($expr0) {
+  $stats0
+}
+</preview>
+</rule>
+<rule>
+<box> HV [ H [ "while" H hs=0 [ "(" HV [ "$expr0" ] ")" ] ] I [
+                                               HV [ "$stat0" ]
+                                             ] ]
+</box>
+<preview>while ($expr0) $stat0
+</preview>
+</rule>
+<rule>
+<box> H  hs=1 [ "return" H hs=0 [ H [ "$expr0" ] ";" ]  ]        </box>
+<preview>return $expr0;
+</preview>
+</rule>
+<rule>
+<box> V [
+H [ "$type0" H hs=0 [ "$id0""(""$params0"")" ] "{" ]
+I [
+  V [
+  "$stats0"
+  ]
+]
+"}"
+]
+</box>
+<preview>$type0 $id0($params0) {
+  $stats0
+}
+</preview>
+</rule>
+<rule>
+<box> H [ "return" H  hs=0 [ "$expr0" ";" ] ]        </box>
+<preview>return $expr0;
+</preview>
+</rule>
+<rule>
+<box> H [ "int" H hs=0 ["$id0"  ";" ]]       </box>
+<preview>int $id0;
+</preview>
+</rule>
+<rule>
+<box> H [ H [ "int" "$id1" "=" ] H hs=0 [ HV [
+                                    "$expr0"
+                                    ]";" ] ]
+</box>
+<preview>int $id1 = $expr0;
+</preview>
+</rule>
+</rules>
+<space-options/>
+<example>int
+   factorial
+   (
+   int n
+) {
+     if
+     (
+     n == 0
+     )
+     {
+        return 1 ;
+     }
+     else
+     if
+     (
+     n == 1
+     )
+     {
+        return 1 ;
+     }
+     else
+     {
+        return
+           n
+           * factorial
+                (
+                n - 1
+             )
+        ;
+     }
+     while
+     (
+     n &gt; 0
+     )
+     n
+        =
+        n - 1
+     ;
+     while
+     (
+     n &gt; 0
+     )
+     n
+        =
+        n - 1111111111111111111111111111111111111111111111111111111111111111111 + 2222222222222222222222222222222
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+        * 1
+     ;
+     while
+     (
+     n &gt; 0 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
+     )
+     {
+        int x
+        =
+        1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
+        ;
+        int z
+        =
+        1
+        ;
+     }
+  }
+
+int
+   exp
+   (
+   int n
+   ,
+   int e
+) {
+     if
+     (
+     e == 0
+     )
+     {
+        return 1 ;
+     }
+     else
+     {
+        return
+           n
+           * exp
+                (
+                n
+                ,
+                e - 1
+             )
+        ;
+     }
+  }
+</example>
+</formatter>

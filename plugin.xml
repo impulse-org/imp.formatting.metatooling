@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension point="org.eclipse.help.toc">
+    <toc
+          category="IMP"
+          file="doc/toc.xml"
+          primary="true"/>
+   </extension>
+
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            name="Formatting Specification Editor"
+            extensions="fsp"
+            icon="icons/sample.gif"
+            contributorClass="org.eclipse.imp.formatting.editor.Contributor"
+            class="org.eclipse.imp.formatting.editor.Editor"
+            id="org.eclipse.imp.formatting.editor.FormattingRulesEditor">
+      </editor>
+   </extension>
+   
+   <extension
+         point="org.eclipse.imp.runtime.languageDescription">
+      <language
+            extensions="fmt"
+            description="A list of formatting rules"
+            language="FormattingSpecification">
+      </language>
+   </extension>
+   
+  
+   <extension
+         id="imp.nature"
+         name="FormattingSpecification Nature"
+         point="org.eclipse.core.resources.natures">
+      <builder
+            id="org.eclipse.imp.formatting.org.eclipse.imp.formatting.builder">
+      </builder>
+      <runtime>
+         <run
+               class="org.eclipse.imp.formatting.builders.FormattingSpecificationNature">
+         </run>
+      </runtime>
+   </extension>
+   <extension
+         id="org.eclipse.imp.formatting.builder.problem"
+         name="FormattingSpecification Error"
+         point="org.eclipse.core.resources.markers">
+      <super
+            type="org.eclipse.core.resources.problemmarker">
+      </super>
+   </extension>
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            objectClass="org.eclipse.jdt.core.IJavaProject"
+            adaptable="false"
+            nameFilter="*"
+            id="FormattingSpecification.imp.projectContextMenu">
+         <action
+               label="Enable FormattingSpecification Builder"
+               tooltip="Enable the FormattingSpecification builder for this project"
+               menubarPath="org.eclipse.imp.metatooling.projectContextMenu/group1"
+               icon="icons/builderEnable.gif"
+               class="org.eclipse.imp.formatting.actions.EnableNature"
+               id="FormattingSpecification.imp.actions.enableNatureAction">
+         </action>
+      </objectContribution>
+   </extension>
+</plugin>

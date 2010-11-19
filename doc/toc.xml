@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+
+<toc label="IDE Meta-tooling Platform Development User Guide">
+	<topic label="IMP Formatting How To"  href="doc/impFormattingHowto.html"> 
+	</topic>
+	<topic label="IMP Formatting Design"  href="doc/impFormattingDesign.html"> 
+	</topic>
+</toc>
+
+

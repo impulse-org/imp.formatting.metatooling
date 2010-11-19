@@ -1,0 +1,328 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>IMP Formatting: How to make a formatter</title><meta name="generator" content="DocBook XSL Stylesheets V1.72.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="id3262557"></a>IMP Formatting: How to make a formatter</h2></div><div><div class="authorgroup"><div class="author"><h3 class="author">Jurgen Vinju</h3><div class="affiliation"><span class="orgname">IBM TJ Watson Research<br></span></div></div></div></div></div><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="section"><a href="#Introduction">Introduction</a></span></dt><dd><dl><dt><span class="section"><a href="#ArchitectureOverview">Architecture overview</a></span></dt><dt><span class="section"><a href="#KnowingTheBoxLanguage">Knowing the Box language</a></span></dt><dt><span class="section"><a href="#Prerequisites">Prerequisites</a></span></dt><dt><span class="section"><a href="#StepByStepCreationOfAFormatter">Step-by-step creation of a formatter</a></span></dt><dt><span class="section"><a href="#SeeAlso">See also</a></span></dt></dl></dd><dt><span class="section"><a href="#SetUpTheFormattingSpecificationEditor">Set up the formatting specification editor</a></span></dt><dd><dl><dt><span class="section"><a href="#ExtendYourParserWithFragments">Extend your parser to be able to recognize fragments</a></span></dt><dt><span class="section"><a href="#ExtendYourParserWithMetaVariables">Extend your parser with syntax for 'meta variables'</a></span></dt><dt><span class="section"><a href="#ImplementingIASTAdapter">Implementing IASTAdapter for your parser</a></span></dt><dt><span class="section"><a href="#BindTheFormattingSpecificationExtensionPoint">Bind the formattingSpecification extension point</a></span></dt></dl></dd><dt><span class="section"><a href="#CreateAFormattingSpecification">Create a formatting specification</a></span></dt><dd><dl><dt><span class="section"><a href="#CreateAWorkingCopy">Create a working copy</a></span></dt><dt><span class="section"><a href="#EditTheFormattingSpecification">Edit the formatting specification</a></span></dt><dt><span class="section"><a href="#TestTheFormattingSpecification">Test the formatting specification</a></span></dt><dt><span class="section"><a href="#ParameterizeTheFormattingSpecification">Parameterize the formatting specification</a></span></dt></dl></dd><dt><span class="section"><a href="#FinalizeTheFormattingPlugin">Finalize the formatting plugin</a></span></dt><dd><dl><dt><span class="section"><a href="#CopyTheFormattingSpecification">Copy the formatting specification to the workspace</a></span></dt><dt><span class="section"><a href="#BindTheFormattingExtensionPoint">Bind the formatting extension point</a></span></dt></dl></dd><dt><span class="section"><a href="#UsingTheFormatter">Using the formatter</a></span></dt></dl></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="Introduction"></a>Introduction</h2></div></div></div><p>This document describes how to make an IMP based source code
+    formatter for a programming language. It contains a brief motivation, an
+    overview of the source formatting architecture, and a step-by-step
+    manual.</p><p>Formatting source code is a simple but important tool for
+    programmers. It has been shown that consistently formatted source code,
+    with judiciously applied indentation, significantly improves code
+    understanding, for novice as well as for advanced programmers. The book
+    "Code Complete" by McConnell contains references to these studies. A
+    source formatter is applied once when foreign code is imported into the
+    programmers' workspace, or applied once in a while by the programmer while
+    she is editing code. The IMP formatting framework naturally supports both
+    use cases.</p><p>The construction of a formatter, and its maintenance, can be quite a
+    bit of work. The IMP formatting plugin intends to help you create and
+    maintain a formatter for your programming language, or your domain
+    specific language. The "heavy lifting", i.e. the actual formatting of
+    source code on a page of text, is done by a formatting language called
+    "Box". Box can be learned in 5 minutes. But first, you need to supply the
+    IMP formatting framework with a parser for your language. After that, you
+    can start implementing a formatter using the IMP formatting specification
+    editor. When the formatter is finished, you can include it as an Eclipse
+    plugin and make it available in the editor for your language.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p><span class="emphasis"><em>Caveat Emptor</em></span>; the IMP formatting tool is
+        very new. It can be considered a prototype which still needs some work
+        in terms of speed of the generated formatters and easy-of-use for the
+        IDE builder. Box and the Box processing tools that are not new; they
+        have been used extensively. Also, the formatter has some known issues
+        concerning corner cases of dealing with source code comments and it
+        always formats entire files at the moment.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ArchitectureOverview"></a>Architecture overview</h3></div></div></div><p>After you are finished implementing an IMP-based formatter, the
+      general control flow is this:</p><div class="orderedlist"><ol type="1"><li><p>The programmer selects a piece of source code and chooses to
+          format it using a menu option or a shortcut in Eclipse</p></li><li><p>The source code is parsed - using the parser you supplied -
+          and the corresponding AST - your own AST class hierarchy - is
+          constructed</p></li><li><p>The AST is translated to a Box expression using the formatting
+          specification you have implemented</p></li><li><p>The Box expression is processed by <span><strong class="command">pandora</strong></span>,
+          a tool that formats the text and returns new source code</p></li><li><p>The new source code replaces the old source code in the
+          editor</p></li></ol></div><p>The following picture depicts the process.</p><div class="figure"><a name="FigArchitecture"></a><p class="title"><b>Figure 1. Control and data flow of formatting a source file</b></p><div class="figure-contents"><div class="mediaobject"><table border="0" summary="manufactured viewport for HTML img" cellspacing="0" cellpadding="0" width="100%"><tr><td><img src="overview.png" width="100%" alt="Control and data flow of formatting a source file"></td></tr></table></div></div></div><br class="figure-break"><p>There are three tools doing the work, the parser, the IMP
+      formatter and Pandora.The IDE developer provides the parser. The IMP
+      formatter is a generic component that is reused by every formatter.
+      Pandora is also a generic component that is reused by every formatter.
+      What the total effect on the source code actually is, is all controlled
+      by the Formatting Specification, which is provided by the IDE
+      developer.</p><p>Technically speaking, the IMP formatter is mainly a
+      <span class="emphasis"><em>pattern matcher</em></span> which applies the right Box
+      expressions to the source code by matching AST patterns that are
+      contained in the Formatting Specification. Pandora is a simple
+      <span class="emphasis"><em>constraint solver</em></span>, fitting text on a page while
+      satisfying the boundaries of Box expressions.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="KnowingTheBoxLanguage"></a>Knowing the Box language</h3></div></div></div><p>The Box language is central to all IMP based formatters. The
+      following document, <a href="/cgi-bin/olink?sysid=" class="olink"><a href="http://homepages.cwi.nl/~daybuild/daily-books/formatting/formatting/formatting.html" target="_top">Formatting
+      with Box and Pandora</a></a>, is the primary online reference for
+      this formatting language. Note that IMP currently supports the
+      <span><strong class="command">G</strong></span>, <span><strong class="command">H</strong></span>,<span><strong class="command"> V</strong></span>,
+      <span><strong class="command">HV</strong></span>, <span><strong class="command">HOV</strong></span>, <span><strong class="command">I</strong></span>,
+      <span><strong class="command">A</strong></span> and <span><strong class="command">R</strong></span> Box operators.</p><p>The Box language provides expressions for nesting two-dimensional
+      boxes of text. These boxes never overlap and they never change the order
+      of appearance of text from left to right. The Box operators try to fit
+      characters on a limited two dimensional area in a very exact manner.
+      Each Box operator has some <span class="emphasis"><em>space options</em></span> (not
+      required due to sensible defaults), which parameterize some of the
+      behavior.</p><p>For a quick introduction, here are some example Box
+      expressions:</p><div class="itemizedlist"><ul type="disc"><li><p><code class="code">H [ "a" "b" ]</code> will place a and b horizontally
+          with a single space in between.</p></li><li><p><code class="code">H hs=2 [ "a" "b" ]</code> will place a and b
+          horizontally with two spaces in between.</p></li><li><p><code class="code">V vs=3 [ "aa" "b"] </code>will place aa and b vertically
+          with two empty lines between them. The members will be aligned at
+          their left starting position.</p></li><li><p><code class="code">HV [ "a" "b" "c" ]</code> will place the three members
+          horizontally from left to right for as long as their is space on the
+          page, or else members will flow to the next line.</p></li><li><p><code class="code">HOV [ "a" "b" "c" ]</code> will place the three members
+          horizontally if they will all fit on the remaining space, or else
+          they will all be placed vertically.</p></li><li><p><code class="code">I is=2 [ "foo" ]</code> will indent it's members by two
+          spaces more than the current indentation level, but only if the box
+          is in a context of a <span><strong class="command">V</strong></span> box (or another vertical
+          context). If the box contains more than one members it behaves as an
+          <span><strong class="command">H</strong></span> box.</p></li><li><p>A (l,c,r) [ R ["aaa" "bbbb" "c"] ["a" "bb" "ccc"] ] will
+          produce a table of three aligned columns. The first column left
+          aligned, the second centered and the third right aligned.</p></li><li><p><code class="code">G gs=2 op=H [ "1" "2" "3" "4" "5"]</code> is the
+          grouping operator. This example translates away to <code class="code">... H [ "1"
+          "2" ] H ["3" "4"] H["5" ""] ...</code></p></li><li><p>Boxes can be arbitrarily nested, as in <code class="code">V vs=2 ["begin" I
+          hs=3 ["1" "2" ] I ["3"] HOV vs=8 [ "%% qwerty" "asdfg" "zxcvb" ]
+          "end" ] </code></p></li></ul></div><p>The latter two operators, <span><strong class="command">A</strong></span> and
+      <span><strong class="command">G</strong></span>, are advanced and sometimes tricky to get right
+      because there are some (unchecked) restrictions to their use:</p><div class="itemizedlist"><ul type="disc"><li><p>The <span><strong class="command">A</strong></span> and <span><strong class="command">R</strong></span> operators
+          need to be nested directly or you will get unexpected results. And,
+          every <span><strong class="command">R</strong></span> box needs exactly an equal number of
+          arguments to the number of columns that the surrounding
+          <span><strong class="command">A</strong></span> box declares.</p></li><li><p>The <span><strong class="command">G</strong></span> operator will splice its resulting
+          list of boxes into the list of boxes of its surrounding box
+          operator!</p><p>Example: <code class="code">A (l,l) [ G op=R gs=2 [ "1" "2" "3" ] ]</code>
+          will translate to the equivalent of: <code class="code">A (l,l) [ R ["1" "2"] R
+          ["3" ""] ]</code></p></li><li><p>Note how the <span><strong class="command">G</strong></span> operator fills groups with
+          empty strings ("") if the number of boxes it is applied to is not
+          divisable by the group size.</p></li></ul></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="Prerequisites"></a>Prerequisites</h3></div></div></div><p>You need to install IMP and the Box tools. See <a href="/cgi-bin/olink?sysid=" class="olink"><a href="http://www.eclipse.org/imp" target="_top">http://www.eclipse.org/imp</a></a>
+      on how to the install IMP run-time. The (temporary) update site for the
+      Box tools is: <a href="/cgi-bin/olink?sysid=" class="olink"><a href="http://homepages.cwi.nl/~daybuild/releases/eclipse" target="_top">http://homepages.cwi.nl/~daybuild/releases/eclipse/imp</a></a>.
+      In the near future, the Box tools will be distributed from the IMP
+      update site directly.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>The Box tools are currently available only for Linux and
+        windows.</p></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>Your users will have the same prerequisites.</p></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="StepByStepCreationOfAFormatter"></a>Step-by-step creation of a formatter</h3></div></div></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>In this document we assume that you know about IMP extension
+        points and Eclipse extension points in general. We also assume that
+        you have already provided a language descriptor and a parse controller
+        for your language to IMP.</p></div><p>The creation of a formatter has three phases, which each have a
+      number of steps. Each phase is explained in detail in a section of this
+      document and each step is explained in a corresponding
+      subsection.</p><div class="orderedlist"><ol type="1"><li><p><a href="#SetUpTheFormattingSpecificationEditor" title="Set up the formatting specification editor">Set up
+          the formatting specification editor</a></p><div class="orderedlist"><ol type="a"><li><p><a href="#ExtendYourParserWithFragments" title="Extend your parser to be able to recognize fragments">Extend your
+              parser to be able to recognize fragments</a></p></li><li><p><a href="#ExtendYourParserWithMetaVariables" title="Extend your parser with syntax for 'meta variables'">Extend
+              your parser with syntax for 'meta variables'</a></p></li><li><p><a href="#ImplementingIASTAdapter" title="Implementing IASTAdapter for your parser">Implementing
+              IASTAdapter for your parser</a></p></li><li><p><a href="#BindTheFormattingExtensionPoint" title="Bind the formatting extension point">Bind the
+              formattingSpecification extension point</a></p></li></ol></div></li><li><p><a href="#CreateAFormattingSpecification" title="Create a formatting specification">Create a
+          formatting specification</a></p><div class="orderedlist"><ol type="a"><li><p><a href="#EditTheFormattingSpecification" title="Edit the formatting specification">Edit the
+              formatting specification</a></p></li><li><p><a href="#TestTheFormattingSpecification" title="Test the formatting specification">Test the
+              formatting specification</a></p></li><li><p><a href="#ParameterizeTheFormattingSpecification" title="Parameterize the formatting specification">Parameterize
+              the formatting specification</a></p></li></ol></div></li><li><p><a href="#FinalizeTheFormattingPlugin" title="Finalize the formatting plugin">Finalize the
+          formatting plugin</a></p><div class="orderedlist"><ol type="a"><li><p><a href="#CopyTheFormattingSpecification" title="Copy the formatting specification to the workspace">Copy the
+              formatting specification to the workspace</a></p></li><li><p><a href="#BindTheFormattingExtensionPoint" title="Bind the formatting extension point">Bind the
+              formatting extension point</a></p></li></ol></div></li></ol></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="SeeAlso"></a>See also</h3></div></div></div><p>For more information on Box and formatting, have a look at these
+      documents:</p><div class="itemizedlist"><ul type="disc"><li><p><a href="/cgi-bin/olink?sysid=" class="olink"><a href="http://homepages.cwi.nl/~daybuild/daily-books/formatting/formatting/formatting.html" target="_top">Formatting
+          with Box and Pandora</a></a>: basic manual for Box and
+          Pandora (commandline usage)</p></li><li><p>IMP Formatting: design: the technical documentation for the
+          IMP formatting plugin</p></li></ul></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="SetUpTheFormattingSpecificationEditor"></a>Set up the formatting specification editor</h2></div></div></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>In the current setup, a formatting specification will be edited
+        in a <span class="emphasis"><em>second level</em></span> Eclipse instance. This may
+        change in the future.</p></div><p>The formatting specification editor is an editor for formatting
+    rules. The editor knows about the object language that is being formatted,
+    because you will provide it with a parser for
+    <span class="emphasis"><em>fragments</em></span> of the language. We assume that you have a
+    plugin project for an existing parser for your language in your current
+    workspace, and that you can start up a second level Eclipse (using the Run
+    or Debug feature of Eclipse) to use it.</p><p>The pre work you have to do now to provide a pattern parser to the
+    formatting specification editor will safe you time later when editing the
+    specification. Also, a pattern parser will probably be useful in the
+    future for other features of your IDE.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ExtendYourParserWithFragments"></a>Extend your parser to be able to recognize fragments</h3></div></div></div><p>The formatting specification editor will allow you to declare
+      formatting rules "construct by construct". For that you will write
+      source code fragments. To be able to parse source code fragments, you
+      should provide a parser (via the well known IParseController interface),
+      that can accept <span class="emphasis"><em>parts</em></span> of a source text (which we
+      call <span class="emphasis"><em>fragments</em></span>).</p><p>A normal parser would have only one start symbol (non-terminal),
+      i.e. <code class="classname">CompilationUnit</code>. The parser you must
+      construct, should be able to accept a limited amount of other start
+      symbols.For example, when using LPG you can simply add non-terminals to
+      the<span><strong class="command"> %Start</strong></span> directive:</p><pre class="programlisting">%Start
+ CompilationUnit Statement Expression
+%End</pre><p>Or in SDF, this would look like:</p><pre class="programlisting">context-free start-symbols
+ CompilationUnit Statement Expression</pre><p>Which non-terminals you choose will influence the way you will
+      write formatting rules significantly:</p><div class="itemizedlist"><ul type="disc"><li><p>The more start symbols you have, the less formatting rules you
+          have to write. This is because languages often reuse parts of a
+          language. Say you forget to include a start symbol for Java
+          expressions for example, but you do have a start symbol for
+          statements, then you will have to write formatting rules for every
+          kind of expression, combined with every kind of statement before you
+          are finished. Expressions are part of statements, like the
+          conditional expression of a while loop in Java. When you do include
+          a start symbol for expressions, they can be formatted by independent
+          formatting rules and you will not have to deal with the
+          combinatorial explosion.</p></li><li><p>The less start symbols you have, the less chance of
+          syntactical ambiguity. So, do not add start non-terminals that
+          overlap syntactically.</p></li></ul></div><p>These two factors need to be balanced. Start with something
+      simple.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ExtendYourParserWithMetaVariables"></a>Extend your parser with syntax for 'meta variables'</h3></div></div></div><p>Now we can parse parts of a language, but we have no abstraction
+      yet. Without abstraction you will have to write a formatting rule for
+      every conceivable source fragment ever written or to be written.
+      Example, you need to be able to write something like this:</p><pre class="programlisting">if (&lt;Expr&gt;) {
+  &lt;StatementList&gt;
+}</pre><p>Such a fragment, which we call a <span class="emphasis"><em>pattern</em></span>
+      because it contains placeholders, can be used to match arbitrary
+      conditionals that only have a 'then' part in Java. We call particular
+      instances of placeholders <span class="emphasis"><em>meta variables</em></span>.They are
+      called meta because they are not variables in the language itself, but
+      variables about the syntax of the language.</p><p>You may choose your own syntax for the meta variables. You may
+      choose which non-terminals to provide meta variables for. However, here
+      are a number of advises:</p><div class="itemizedlist"><ul type="disc"><li><p>Start with providing meta variables for the non-terminals that
+          are start non-terminals. Apart from the top one (i.e.
+          CompilationUnit), you will need at least variables for all of
+          these.</p></li><li><p>Have meta variables for all classes of identifier tokens. You
+          will definitely need to be able to abstract from particular names of
+          source code entities, for obvious reasons.</p></li><li><p>Choose a consistent unambiguous escape character for all meta
+          variables. In the above example, we chose to wrap variable names in
+          <code class="code">&lt;..&gt;</code>. That would be a good choice for Java 1.4,
+          but a bad one for Java 5 since these characters are now used for
+          type parameters.</p></li><li><p>Make sure that meta variables can be numbered or otherwise be
+          made unique. Example: <code class="code">&lt;Statement.1&gt;,
+          &lt;Statement.2&gt;</code>. This is very necessary later on to get a
+          correct formatter.</p></li></ul></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ImplementingIASTAdapter"></a>Implementing IASTAdapter for your parser</h3></div></div></div><p>The source formatter works by pattern matching on AST's. To know
+      about what AST format you are using, there is an IASTAdapter interface
+      (from the <span class="package">org.eclipse.imp.runtime</span> plugin) that you
+      must implement. The method names should be self-explanatory and there is
+      some javadoc documentation there too.</p><p>You do not have to implement all methods for the purpose of
+      formatting. These are the relevant methods:</p><div class="orderedlist"><ol type="1"><li><p>getChildren()</p></li><li><p>getOffset() and getLength()</p></li><li><p>getTypeOf()</p></li><li><p>isMetaVariable()</p></li></ol></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>The IASTAdapter interface has not stabilized yet, but these
+          methods will be there in one form or another.</p></div><p>The semantics of how you implement IASTAdapter and the
+      properties of the underlying AST representation you use are of great
+      influence on the semantics (and correctness!) of the source formatting
+      framework:</p><div class="itemizedlist"><ul type="disc"><li><p>getChildren() must return AST children in order of appearance
+          in the source <span class="emphasis"><em>text.</em></span></p></li><li><p>getChildren() must eventually (recursively) yield all visible
+          parts of the source <span class="emphasis"><em>text</em></span> (see getOffSet() and
+          getLength())</p></li><li><p>getOffset() returns the zero based character offset of the
+          starting character of an AST node</p></li><li><p>getLength() returns the number of characters that the AST node
+          encompasses (including whitespace!)</p></li><li><p>getTypeOf() returns a <span class="emphasis"><em>canonical</em></span> name for
+          a particular kind of AST node. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>The basic semantics of pattern matching is based on this
+              method being correct. Pattern matching will continue matching
+              the children of an AST node if and only if the type names of the
+              pattern node and the object node are equal.</p></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>Nodes that are semantically equivalent but syntactically
+              different <span class="bold"><strong>MUST</strong></span> have different
+              type names, or else the syntax of the source code that is
+              formatted might change during formatting.</p></div></li><li><p>isMetaVariable() should return true if and only if the current
+          AST node should be interpreted as a meta variable.</p></li></ul></div><p>The author of the formatting framework recognizes that not every
+      AST class hierarchy easily meets the above requirements. This is a fact
+      of life; however when you do have an AST class hierarchy that meets the
+      above requirements, many other IDE features - particularly the ones that
+      manipulate source code - will be easier to implement.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="BindTheFormattingSpecificationExtensionPoint"></a>Bind the formattingSpecification extension point</h3></div></div></div><p>Now we you are ready to instantiate a formatting specification
+      editor. Use the "New Formatting Specification" wizard from the IMP IDE
+      building perspective, or simply bind the extension point from
+      <span class="package">org.eclipse.imp.formatting</span>. The extension point
+      contains:</p><div class="orderedlist"><ol type="1"><li><p>a reference to a formatting specification file (with the
+          <code class="filename">.fsp</code> extension)</p></li><li><p>a reference to your IASTAdapter</p></li><li><p>a reference to an IParseController that controls the parser
+          that can handle fragments and meta variables</p></li></ol></div><p>When you use the wizard, a proper skeleton
+      <code class="filename">.fsp</code> file will be generated for you. When you do it
+      manually, please copy the contents of this template file and fill in the
+      name of your language (essential):</p><pre class="programlisting">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;formatter&gt;
+ &lt;language&gt;YourLanguageName&lt;/language&gt;
+ &lt;rules/&gt;
+ &lt;space-options/&gt;
+ &lt;example/&gt;
+&lt;/formatter&gt;</pre></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="CreateAFormattingSpecification"></a>Create a formatting specification</h2></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="CreateAWorkingCopy"></a>Create a working copy</h3></div></div></div><p>Because the formatting specification editor uses a parser that is
+      in your workspace and not in your installed plugins, you have to start
+      up a second level Eclipse. Also, you need to copy, or link the .fsp file
+      somewhere in the second level workspace.</p><p>By double clicking on the .fsp file in your second level
+      workspace, a specialized editor will be opened to allow you to specify a
+      formatter for your language. There are three tabs to this editor:</p><div class="orderedlist"><ol type="1"><li><p>The Rules tab, which contains a table of formatting
+          rules</p></li><li><p>The Example tab, which contains a continuously formatted
+          example source text</p></li><li><p>The Options tab, where you can declare global variables for
+          Box space options</p></li></ol></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="EditTheFormattingSpecification"></a>Edit the formatting specification</h3></div></div></div><p>By adding rules in the Rules tab for every construct in the
+      language, you increase the functionality of the formatter. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>A formatter is always complete, even though you have not
+          produced rules for every language construct. The IMP formatter will
+          choose a default layout for any construct you have not provided a
+          rule for yet. It will guess a layout by looking at the shape of the
+          AST's. However, the default is almost never very pretty. The main
+          reason for the existence of default rules is correctness: they make
+          sure all of the source text of the original program ends up in the
+          formatted program.</p></div><p>The rule editor has three columns, only two of which are editable.
+      You edit the second 'Box' column. The syntax of the text in that column
+      is Box expressions. The first column will display an error message when
+      you have typed a syntactically invalid Box expression.</p><p><span class="bold"><strong>Key point</strong></span>: Box expressions
+      contain literal strings, for example: <code class="code">H [ "if" ]</code> contains
+      "if". The literal strings of a Box expression are parsed using your
+      <span class="emphasis"><em>fragment parser</em></span>. Here's an example:</p><pre class="programlisting">V [ H [ "if" "("  "&lt;Expression&gt;" ")" "{" ] I [ "&lt;StatementList&gt;" ] "}"] </pre><p>This example shows a Box expression, which embeds a Java fragment.
+      This is the embedded fragment, which will be shown in the third
+      (Preview) column:</p><pre class="programlisting">if ( &lt;Expression&gt;) { &lt;StatementList&gt; }</pre><p>The rule editor will not accept syntactically invalid embedded
+      fragments.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>Technically speaking, the pair of the Box expression and the
+          embedded fragment is called a <span class="emphasis"><em>rule.</em></span> A rule
+          fires on a part of an AST when the fragment pattern matches. When it
+          fires, that part of the AST is translated to the corresponding Box
+          expression. The embedded meta variables are replaced by the
+          corresponding Box expressions for those parts of the program text.
+          This is how a set of rules finally results in a total translation
+          from the source text to a Box expression.</p></div><p>The rule editor has a number of buttons to help you get started.
+      Use the "Add rule..." button first. It will allow you to type a program
+      fragment, and it will generate a rule for you. This functionality uses a
+      very simple tokenizer (separate each token by spaces), it adds the right
+      quoting around the literals and provides a basic Box operator. For
+      example, when you type: <code class="code">1 == 2</code> in the pop up dialog, it
+      will generate a rule: <code class="code">HOV [ "1" "==" "2" ]</code>.</p><p>The "Add rule" button simply adds an empty rule, in which you can
+      start editing a new Box expression. Notice how the preview changes when
+      you edit the rule, and how the first 'Status' column indicates that
+      there are problems. The preview column also applies the Box operator
+      semantics, such that you can see how the fragment would look like in
+      principle. </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>The assumption of the Preview column is that there is always
+          enough horizontal space, so you will not see the vertical effects of
+          the <span><strong class="command">HOV</strong></span> or <span><strong class="command">HV</strong></span> boxes.</p></div><p>Nothing prohibits you from writing overlapping rules. I.e, you
+      could have general rules for general formatting, and add special cases
+      for special purposes. The rules are tried <span class="emphasis"><em>in order</em></span>,
+      so the first rule that matches takes precedence over the others. Take
+      these two example rules for Java:</p><pre class="programlisting">V [ H [ "if" "("  "&lt;Expression&gt;" ")" "{" ] "&lt;StatementList&gt;" "}"]        Preview: if (&lt;Expression&gt;) { &lt;StatementList&gt; }
+---and--- 
+V [ H [ "if" "(" "&lt;Expression&gt;" ")" ] I [ "&lt;Statement&gt;" ] ]              Preview: if (&lt;Expression&gt;) &lt;Statement&gt;</pre><p>The second rule overlaps with the first, because a block Statement
+      is also a Statement. However, we do not want to indent the curly braces,
+      and we want the first curly brace on the same line as the conditional
+      expression. So, the first rule is a special case that takes
+      precedence.</p><p><span class="bold"><strong>Key point</strong></span>: meta variable names
+      better be unique for every pattern. What the variables are replaced by
+      is identified by name, and not by position in the pattern, so if you use
+      the same variable name twice, the formatter will replace the second
+      occurrence by the Box expression for the first. The resulting source
+      code will be broken. There is no static checker in the editor for this
+      yet.</p><p>You can add so called separators to the rule table to logically
+      group your rules. The separators have no semantics, they are there to
+      keep the formatting specification readable. Finally the "Up" and "Down"
+      button allow you to change the order of rules in order to influence
+      their grouping, but more importantly their relative precedence.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="TestTheFormattingSpecification"></a>Test the formatting specification</h3></div></div></div><p>The Example tab can contain any syntactically valid fragment of
+      source code in your programming language. When this tab is active and
+      you press the "Format" button, the source text will be formatted using
+      the current set of formatting rules and the current set of space
+      options. Also, when the focus changes to the Example tab, the current
+      set of rules and space options are applied.</p><p>You are advised to leave a small but complete example of a source
+      text in this example tab. It will be saved with your formatting
+      specification and can serve as a quick regression test when you add
+      rules.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ParameterizeTheFormattingSpecification"></a>Parameterize the formatting specification</h3></div></div></div><p>Box operators may have space options. A good example is the
+      <span><strong class="command">I</strong></span> box: <code class="code">I is=4 ["a"]</code>. A consistent use of
+      the space options is necessary to get a consistent source code
+      formatter. The number 4 will appear in many rules that use
+      indentation.</p><p>Instead you can define a global variable in the Options tab and
+      use it anywhere there is a space option. All space option variable start
+      with a '$' sign, which is enforced by the option table tab. All values
+      of space options are non-negative integer numbers.</p><p>Example usage:</p><pre class="programlisting">V [ H [ "if" "("  "&lt;Expression&gt;" ")" "{" ] I is=$indent [ "&lt;StatementList&gt;" ] "}"] 
+---and--- 
+V [ H [ "if" "(" "&lt;Expression&gt;" ")" ] I is=$indent [ "&lt;Statement&gt;" ] ]             </pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>There is a plan to expose these global parameters to the end
+        user somehow, such that she can influence basic properties of the
+        formatter. Another feature would be to include boolean parameters for
+        rule activation. In this manner we can generate source formatting
+        preferences with alternative pre cooked formatting behavior straight
+        from your formatting specification. If you want to help out, please
+        contact us.</p></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="FinalizeTheFormattingPlugin"></a>Finalize the formatting plugin</h2></div></div></div><p>The <code class="filename">.fsp</code> file now contains many formatting
+    rules, but it is in the second level workspace unless you used a soft
+    link.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="CopyTheFormattingSpecification"></a>Copy the formatting specification to the workspace</h3></div></div></div><p>Copy the <code class="filename">.fsp</code> file back to the first level
+      workspace. Remember to put it where the formattingSpecification
+      extension point expects it to be. You can look up this location in the
+      <code class="filename">plugin.xml</code> file of your plugin project.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="BindTheFormattingExtensionPoint"></a>Bind the formatting extension point</h3></div></div></div><p>Now you just need to tell the IMP editor to use this formatter.
+      IMP is open to other implementations of formatters in principle. You now
+      need to tell it to use the formatting functionality from
+      <span class="package">org.eclipse.imp.formatting</span> instead of something else.
+      However, if you have used the 'New Formatting Specification' wizard, it
+      will have provided the appropriate extension already. When you did not
+      use the wizard, you still need to add the following extension (fill in
+      your language name):</p><pre class="programlisting">&lt;extension point="org.eclipse.imp.runtime.formatter"&gt;
+      &lt;formatter
+            class="org.eclipse.imp.formatting.SourceFormatter"
+            language="YourLanguageName"&gt;
+      &lt;/formatter&gt;
+&lt;/extension&gt;</pre></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="UsingTheFormatter"></a>Using the formatter</h2></div></div></div><p>IMP will automatically trigger the formatter when using the "Format
+    Source Code" short-cut, or when you select "Format Source Code" from a
+    menu. IMP knows to select the right formatting specification using the
+    language name that is part of the formatting specification file. The first
+    time that a formatter is being run, there may be a hick-up due to loading
+    of the specification and parsing of the patterns.</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>The current implementation formats entire source files. Future
+        work includes formatting selected parts.</p></div></div></div></body></html>

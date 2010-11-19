@@ -1,0 +1,611 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article version="5.0" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:xs="http://www.w3.org/2001/XMLSchema"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:svg="http://www.w3.org/2000/svg"
+         xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:mml="http://www.w3.org/1998/Math/MathML"
+         xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+         xmlns:html="http://www.w3.org/1999/xhtml"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:db="http://docbook.org/ns/docbook"
+         xmlns:cc="http://web.resource.org/cc/">
+  <title>IMP formatting: design</title>
+
+  <info>
+    <authorgroup>
+      <author>
+        <personname>Jurgen Vinju</personname>
+
+        <affiliation>
+          <orgname>IBM TJ Watson Research</orgname>
+        </affiliation>
+      </author>
+    </authorgroup>
+  </info>
+
+  <section>
+    <title>Introduction</title>
+
+    <para>This document describes design decisions of the
+    <package>org.eclipse.imp.formatting</package> and
+    <package>org.eclipse.imp.box</package> plugins.The primary source of
+    information about these plugins would be the source code of the respective
+    packages. This document adds to this information only by motivating the
+    design as it is and pointing out how it could be improved. Its intended
+    audience is committers of the Eclipse IMP project.</para>
+
+    <para>The IMP formatting plugin is an experiment in reuse. It reuses the
+    Box formatting specification language. Box originates from <olink><link
+    xlink:href="http://www.meta-environment.org">The
+    Meta-Environment</link></olink>, and it is distributed as part of both
+    <olink><link
+    xlink:href="http://www.syntax-definition.org">SDF</link></olink> and The
+    Meta-Environment. Box takes care of the details of formatting text on
+    two-dimensional page of text that has limited horizontal space and
+    unlimited vertical space. Box is targeted at programming languages and
+    other formal languages specifically because it guarantees the order of the
+    readable text from left to right will remain unchanged. Moreover, the
+    basic notion of nesting, which is central for programming languages, is a
+    first class concept in Box. Box is small but versatile and has been used
+    for the construction of many source formatters. The concepts of the Box
+    language can be found in many other meta programming systems. The initial
+    ideas for Box originate from a French technical report on layout
+    hierarchies by Coutaz.</para>
+
+    <para>The IMP formatting architecture adds a number features to this
+    existing functionality:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>A specialized editor for Box formatting rules</para>
+      </listitem>
+
+      <listitem>
+        <para>Integration with any IParseController implementation (see
+        note)</para>
+      </listitem>
+
+      <listitem>
+        <para>Integration with the Universal Editor</para>
+      </listitem>
+    </itemizedlist>
+
+    <section>
+      <title>See also</title>
+
+      <para>Before reading this document please familiarize yourself with the
+      following documents:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><olink><link xlink:href="impFormattingHowto.html">IMP
+          formatting: How to make a formatter</link></olink></para>
+        </listitem>
+
+        <listitem>
+          <para><olink><link
+          xlink:href="http://homepages.cwi.nl/~daybuild/daily-books/formatting/formatting/formatting.html">Formatting
+          with Box and Pandora</link></olink></para>
+        </listitem>
+
+        <listitem>
+          <para>"A Language Independent Framework for Context-sensitive
+          Formatting." In CSMR '06: Proceedings of the Conference on Software
+          Maintenance and Reengineering, pages 103-112, Washington DC, USA,
+          2006. IEEE Computer Society Press.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>The latter document is not essential, but the current design
+      mimics the design described in that paper exactly and the document will
+      provide you with more references and context information.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Packages</title>
+
+    <para>One view of the formatting architecture is which packages are
+    involved. There is one package to hide installation details of SDF and
+    Box. There is one package implementing a Java interface to Box tools.
+    There is a package that provides formatting functionality to IMP.</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><package>sdf-eclipse-installer</package> and fragments:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>wraps binary distributions of SDF and BOX tools in an
+            Eclipse plugin</para>
+          </listitem>
+
+          <listitem>
+            <para>installs these tools at time of first use</para>
+          </listitem>
+
+          <listitem>
+            <para>provides utilities to call the installed commandline
+            tools</para>
+          </listitem>
+        </itemizedlist>
+      </listitem>
+
+      <listitem>
+        <para><package>org.eclipse.imp.box</package>:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>uses sdf-eclipse-installer to provide basic Box to formatted
+            text functionality as a Java API</para>
+          </listitem>
+
+          <listitem>
+            <para>provides an LPG-based Box parser</para>
+          </listitem>
+
+          <listitem>
+            <para>provides a simple IMP based IDE for Box expressions</para>
+          </listitem>
+        </itemizedlist>
+      </listitem>
+
+      <listitem>
+        <para><package>org.eclipse.imp.formatting</package></para>
+
+        <itemizedlist>
+          <listitem>
+            <para>uses org.eclipse.imp.box to map box expressions to source
+            code</para>
+          </listitem>
+
+          <listitem>
+            <para>provides a formatting specification XML format (parser and
+            unparser)</para>
+          </listitem>
+
+          <listitem>
+            <para>provides an formatting specification editor</para>
+          </listitem>
+
+          <listitem>
+            <para>provides a transformation mechanism from arbitrary AST's to
+            Box expressions, which also implements a default mapping to
+            Box.</para>
+          </listitem>
+
+          <listitem>
+            <para>provides an implementation for the IMP formatting extension
+            point</para>
+          </listitem>
+
+          <listitem>
+            <para>provides how to documentation</para>
+          </listitem>
+        </itemizedlist>
+      </listitem>
+    </itemizedlist>
+
+    <para>One of the reasons to have this division in three packages is that
+    changes are expected in the way SDF is distributed and the way Box is
+    exposed to Java. More specifically, Box is implemented in a high level
+    language (ASF+SDF) that is compiled to C, it may be compiled to Java in
+    the future. The last package is rather big (it encapsulates some rather
+    different functionalities). In the future we might split it up such that
+    formatting can be done without installing the formatting specification
+    editor.</para>
+
+    <para>Also note that the sdf-eclipse-installer package is distributed from
+    CWI in The Netherlands at the moment. IMP will probably distribute a copy
+    from eclipse.org in the future.</para>
+  </section>
+
+  <section>
+    <title>Interaction design</title>
+
+    <para>In this section the rationale behind the usage scenarios of the
+    formatting tools is explained.</para>
+
+    <section>
+      <title>IDE developer</title>
+
+      <para>The IDE developer interacts with the formatting plugin in two
+      ways. First, he sets up a formatting specification editor for a specific
+      language, then he uses the formatting specification editor to implement
+      formatters for that language.</para>
+
+      <para>Setting up the specification editor is explained in detail in
+      <olink><link xlink:href="impFormattingHowto.html">IMP formatting: How to
+      make a formatter</link></olink>. The IDE developer will use the IDE for
+      her specific grammar formalism or programming language that the parser
+      is implemented in. There is a wizard 'New formatting specification'
+      which will help the IDE developer to generate an empty formatting
+      specification file and bind the right extension points.</para>
+
+      <para>Setting up the specification editor requires intimate knowledge of
+      the programming language and the parser implementation. This can be
+      considered a problem. In the future, we may support wizards for setting
+      up the editor that know about the specific parser generator formalism.
+      For example, if the wizard would know that LPG or SDF is being used,
+      setting up the editor could be made significantly easier. The necessary
+      grammar extensions and the implementation of IASTAdapter could all be
+      provided automatically.</para>
+
+      <para>After the developer has set up the specification editor, she
+      starts up a second level Eclipse to start editing the formatting
+      specification. The reason is purely technical. For usability purposes,
+      we would prefer to use the formatting specification editor directly in
+      the first level Eclipse. This is not possibly because in principle the
+      editor uses functionality like the parser and the IASTAdapter that only
+      reside in the workspace (are not installed as Eclipse plugins
+      yet).</para>
+
+      <para>The specification editor itself is an experiment in usability and
+      immediate feedback to the user. Traditionally Box based formatters are
+      implemented using term rewriting rules with concrete syntax that map
+      language constructs to Box constructs. In the editor, the same concept
+      is 'under the hood', but a lot less redundant syntax is provided and a
+      lot more static checking. The idea is that the table of formatting rules
+      holds only one editable Box expression. This expression yields both the
+      left-hand side as the right-hand side of a mapping from source language
+      to the Box language. Please compare:</para>
+
+      <para></para>
+
+      <programlisting>A rewrite rule that maps a statement to Box:
+[| if E then S*1 else S*2 fi |] =&gt; V [ H ["if" [|E|] "then" ] [|S*1|] "else" [|S*2|] "fi" ] ]
+
+A single Box expression from the formatting specification editor
+V [ H ["if" "&lt;E&gt;" "then" ] "&lt;S*1&gt;" "else" "&lt;S*2&gt;" "fi" ]</programlisting>
+
+      <para>Conceptually, the IMP formatting specification editor generates
+      the former from the latter. Both Box syntax and the embedded syntax of
+      the object language are checked for syntax errors. The latter
+      presentation prevents the obvious redundancy between the left-hand and
+      right-hand sides of the rewrite rule. The left hand side of the rule is
+      definitely the best readable part, so that is why the editor displays
+      this view of the rule in the third column of the rule editor table
+      (updated continuously to reflect the last state of the Box
+      expression).</para>
+
+      <para>A second usability improvement is that the rules are grouped into
+      sections. The user defined sections in the editor allow formatting
+      specifications be ordered according to a logic that is defined by the
+      IDE developer.</para>
+
+      <para>A third usability improvement is that rules are ordered.The
+      ordering from top to bottom allows the IDE developer to express
+      precedence for overlapping rules. Overlapping rules are essential for
+      the implementation of special cases. Special cases are, surprisingly
+      enough, very frequently occurring in the domain of source code
+      formatters. The main reason is that there is an impedance mismatch
+      between the shape of AST's and the hierarchical image that a programmer
+      has of the same source code. For example:</para>
+
+      <programlisting>if (E) 
+  printf("hoi")
+and
+if (E) {
+  printf("hoi")
+}</programlisting>
+
+      <para>Although the block construct is a direct child of the conditional
+      statement in the AST, the programmer sees the block <emphasis>as a
+      part</emphasis> of the conditional statement on the same level. The
+      indentation reflects this view. The conditional nodes that have block
+      structures as direct children are a thus special case of formatting
+      conditional statements.</para>
+
+      <para>Finally the example tab in the editor allows the IDE developer to
+      continuously test his set of rules on a well known example.This is also
+      a major improvement over existing tools.</para>
+
+      <para>Although we have mentioned the above benefits, usability issues
+      with the formatting specification editor are numerous:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>There is no auto-content support for Box expressions, the user
+          needs to know the syntax of Box expressions by heart</para>
+        </listitem>
+
+        <listitem>
+          <para>There is no auto-content support for object language terms and
+          meta variables, the user needs to know both the object language and
+          the set of meta variables by heart.</para>
+        </listitem>
+
+        <listitem>
+          <para>There is no auto-escaping and auto-quoting support apart from
+          a very rudimentary "Add Rule..." button. Since object language
+          programs need to be quoted and escaped in a particular way this
+          would be very useful.</para>
+        </listitem>
+
+        <listitem>
+          <para>There is no good implementation of undo after the focus has
+          left a specific edit box in the table</para>
+        </listitem>
+
+        <listitem>
+          <para>The continuously checked example is on a different tab, and
+          cannot be viewed simultaneously as the rules are being changed by
+          the IDE developer.</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section>
+      <title>Developer</title>
+
+      <para>The interaction with formatters by the end developer is provided
+      and implemented by the IMP universal editor. The user can select a part
+      of the program or a whole file and trigger source formatting on
+      this.</para>
+
+      <para>Note that the selection of parts of files is active, but the
+      current implementation will still reformat the whole file. This needs
+      improvement.</para>
+
+      <para>There is currently no way of editing preferences or influencing
+      the behavior of formatters by the programmer. In the future, the space
+      options of the formatting specifications could be presented as
+      overridable parameters to the user, or possibly a set of alternative
+      rules could be selectable in a preference screen.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Data and control</title>
+
+    <para>In this section the low level design of the formatting tools are
+    explained: what happens, when, how and why.</para>
+
+    <para>The formatting plugin is constructed XP-style; "the simplest thing
+    that could possibly work". It does work, but there are issues w.r.t speed
+    and elegance. The reason for this approach was mainly limited time and a
+    wish to explore the basic interaction design quickly. Another big
+    motivation for the current design is to limit the amount and intensity of
+    dependencies on Meta-Environment components to the minimum.For an initial
+    implementation this would seem prudent. However, in the future these
+    considerations may change.</para>
+
+    <section>
+      <title>Data model</title>
+
+      <para>The central container (model) for a formatting specification is a
+      <classname>Specification</classname> object, which contains the strings
+      from the formatting specification file, and all AST's for code fragments
+      and corresponding Box expressions. A
+      <classname>Specification</classname> contains a list of
+      <classname>Rules</classname>, and each <classname>Rule</classname>
+      contains both the String and the AST representations of the object
+      language pattern and the resulting Box expression.</para>
+
+      <para>Each <classname>Specification</classname> object also knows the
+      name of the language it applies to, contains the example source text and
+      the list of space option variables to apply.</para>
+
+      <para>The <classname>Specification</classname> objects are
+      (de)serialized to an XML file which contains all the string
+      representations of the model. The AST are not stored.</para>
+
+      <para>The intention of this central data model is that it can be used in
+      for both usage scenarios: <olink><link
+      linkend="WhenFormattingAFile">when formatting a file</link></olink>, and
+      <olink><link linkend="WhenEditingAFormattingSpecification">when editing
+      a formatting specification</link></olink>.</para>
+    </section>
+
+    <section xml:id="WhenFormattingAFile">
+      <title>When formatting a file</title>
+
+      <orderedlist>
+        <listitem>
+          <para>The IMP universal editor's format action is triggered, which
+          is bound by the <package>org.eclipse.imp.runtime</package> extension
+          point to the default <classname>ISourceFormatter</classname>
+          implementation of <package>org.eclipse.imp.formatting. [Or, the
+          example code in the formatting specification editor is being
+          formatted which amounts to the same thing]</package></para>
+        </listitem>
+
+        <listitem>
+          <para>The formatting specification is loaded, and all rules are
+          parsed and processed resulting in a fully formed
+          <classname>Specification</classname> object. This object is cached
+          for the next time the formatter is used. For each rule in the
+          <classname>Specification</classname>:</para>
+
+          <orderedlist>
+            <listitem>
+              <para>The object language string is parsed using the
+              IParseController from the formattingSpecification. The AST is
+              stored in the corresponding Rule object.</para>
+            </listitem>
+
+            <listitem>
+              <para>The Box string is parsed using the IParseController for
+              Box. The AST is stored in the corresponding Rule object.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+
+        <listitem>
+          <para>The <classname>IParseController</classname> from the
+          formattingSpecification extension point is used to parse the source
+          file to be formatted, and a handle to an AST object is
+          obtained</para>
+        </listitem>
+
+        <listitem>
+          <para>A <classname>Transformer</classname> object translates the AST
+          to a Box string according to the rules in the
+          <classname>Specification</classname>, using the IASTAdapter class
+          from the formattingSpecification extension point. See <olink><link
+          linkend="TranslatingAnASTToBox">"Translating an AST to
+          Box</link>"</olink></para>
+        </listitem>
+
+        <listitem>
+          <para>The Box string is parsed by a commandline tool from SDF,
+          called <command>sglr</command>, which is also provided a parse table
+          file, which is part of <package>org.eclipse.imp.box</package></para>
+        </listitem>
+
+        <listitem>
+          <para>The resulting parse tree of the Box expression is piped
+          immediately to another commandline tool, called
+          <command>pandora</command>, which maps the parse tree to a string of
+          formatted source code</para>
+        </listitem>
+
+        <listitem>
+          <para>The resulting source code is given as a result of a formatting
+          action to the Universal editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>The editor splices in the results in the source code</para>
+        </listitem>
+      </orderedlist>
+
+      <para>Ad 2 and 4 it would be better to construct a parse tree of a Box
+      expression immediately. There are Java API's for constructing Box
+      expressions available from The Meta-Environment. It would even be easy
+      to store serialized representations of these parse trees in the
+      formatting specification file. This would also remove the hick-up that
+      is observed when using a formatter for the first time. This hick-up is
+      mainly caused by parsing the Box expressions in text format that are
+      embedded in the formatting specification file. This would remove the
+      need for</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>constructing a very large Box expression string</para>
+        </listitem>
+
+        <listitem>
+          <para>parsing that string</para>
+        </listitem>
+
+        <listitem>
+          <para>piping the resulting parse tree to pandora</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section xml:id="WhenEditingAFormattingSpecification">
+      <title>When editing a formatting specification</title>
+
+      <para>When the editor is started nothing happens but loading the data
+      from the formatting specification file into the rule table (step 2 from
+      <olink><link linkend="WhenFormattingAFile"> "When formatting a
+      file</link>"</olink>). The specification file contains the formatted
+      previews of every rule such that not every rule needs to be formatted at
+      editor startup time.</para>
+
+      <para>For every single Box rule that has been edited:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>The Box syntax is parsed using the IParseController for Box
+          from org.eclipse.imp.box (implemented using LPG), and parse errors
+          are reported in the first column. The Box string is stored in the
+          <classname>Specification</classname> object, and also its
+          corresponding AST.</para>
+        </listitem>
+
+        <listitem>
+          <para>Similar to steps 5 and 6 from <olink><link
+          linkend="WhenFormattingAFile"> "When formatting a
+          file</link>"</olink>, the Box string is piped through
+          <command>sglr</command> and <command>pandora</command> to obtain a
+          formatted preview string in the object language. The preview is
+          shown in the preview column and the
+          <classname>Specification</classname> object is updated with a new
+          object string.</para>
+        </listitem>
+
+        <listitem>
+          <para>The resulting object language string is now parsed using the
+          IParseController from the formattingSpecification extension point,
+          and parse errors are reported in the first column. The AST is stored
+          in the Specification Object.</para>
+        </listitem>
+      </orderedlist>
+    </section>
+
+    <section>
+      <title xml:id="TranslatingAnASTToBox">Translating an AST to Box</title>
+
+      <para>The actual translation, by a <classname>Transformer</classname>
+      object, is driven by a left-to-right bottom-up (post-order) traversal of
+      the AST object. The AST of the source text is translated completely to a
+      large Box string. The resulting string contains all the visible
+      characters of the source code as Box literals.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>First, all rules in the <classname>Specification</classname>
+          are hashed on the type of the outermost node of the AST.</para>
+        </listitem>
+
+        <listitem>
+          <para>A global map from AST node handles to corresponding Box
+          strings is initialized</para>
+        </listitem>
+
+        <listitem>
+          <para>Then, each node is visited. The type of the node is found
+          using IASTAdapter and the set of possibly applicable rules are
+          looked up from the hash table.</para>
+        </listitem>
+
+        <listitem>
+          <para>The <classname>Matcher</classname> object checks whether the
+          current AST node matches the pattern of each rule. The first rule
+          that successfully matches wins. A successful match also returns a
+          set of bindings for the meta variables in the pattern, each meta
+          variable points to an object in the AST hierarchy.</para>
+        </listitem>
+
+        <listitem>
+          <para>The box string from the rule that matched is retrieved. Using
+          the global map of AST nodes to Box strings, now each occurrence of a
+          meta variable in the Box string is replaced by an actual Box
+          string</para>
+        </listitem>
+
+        <listitem>
+          <para>The resulting bigger string is stored in the global map from
+          AST nodes to Box strings.</para>
+        </listitem>
+
+        <listitem>
+          <para>Now the next node is visited.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>The bottom-up behavior is essential such that the values of
+      matched meta variables are known before they are used.</para>
+
+      <para>Note that this algorithm does some unnecessary work when patterns
+      match more than one level deep. Deeper nodes are translated first, but
+      their effect can be lost because a higher node matches a deep pattern
+      and does not look up the previously computed Box expressions for the
+      nodes that the pattern consists of.</para>
+
+      <para>Again, it would be better to build AST's of Box expressions that
+      can be directly fed to <command>pandora</command>.This would probably
+      improve the speed of substituting meta variables too. Also, instead of a
+      global map from AST nodes to Box expressions, the bottom-up traversal
+      could simply return completed Box expressions on the way back from the
+      traversal.</para>
+    </section>
+  </section>
+</article>
